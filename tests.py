@@ -1,3 +1,5 @@
+import pytest
+
 # класс TestBooksCollector объединяет набор тестов, которыми мы покрываем наше приложение BooksCollector
 # обязательно указывать префикс Test
 class TestBooksCollector:
@@ -20,28 +22,29 @@ class TestBooksCollector:
     def test_add_new_book_can_add_same_book_only_once(self, collector, book_name):
         collector.add_new_book(book_name)
         total = len(collector.get_books_rating())
-        collector.set_book_rating(book_name, 8)
         collector.add_new_book(book_name)
         assert len(collector.get_books_rating()) == total
+
+
+    def test_add_new_book_rating_is_not_new_when_add_same_book_twice(self, collector, book_name):
+        collector.add_new_book(book_name)
+        collector.set_book_rating(book_name, 8)
+        collector.add_new_book(book_name)
         assert collector.get_book_rating(book_name) == 8
 
-    def test_set_book_rating_less_than_1_ignored(self, collector, book_name):
+    @pytest.mark.parametrize('invalid_rating', [0, 11, -5])
+    def test_set_book_rating_ignore_invalid(self, collector, book_name, invalid_rating):
         collector.add_new_book(book_name)
-        collector.set_book_rating(book_name, 0)
-        assert collector.get_book_rating(book_name) == 1
-
-    def test_set_book_rating_more_than_10_ignored(self, collector, book_name):
-        collector.add_new_book(book_name)
-        collector.set_book_rating(book_name, 11)
+        collector.set_book_rating(book_name, invalid_rating)
         assert collector.get_book_rating(book_name) == 1
 
     def test_get_book_rating_for_unadded_book(self, collector):
-        assert collector.books_rating.get('влоа_првоп№р%оврапоушк') is None
+        assert collector.get_book_rating('Фиг пойми какая книга') is None
 
     def test_add_book_in_favorites_added_book_is_at_list_of_favorites(self, book_name, collector):
         collector.add_new_book(book_name)
         collector.add_book_in_favorites(book_name)
-        assert len(collector.get_list_of_favorites_books()) == 1
+        assert book_name in collector.get_list_of_favorites_books()
 
     def test_add_book_in_favorites_twice_no_duplicate(self, book_name, collector):
         collector.add_new_book(book_name)
@@ -54,13 +57,14 @@ class TestBooksCollector:
         collector.add_new_book(book_name)
         collector.add_book_in_favorites(book_name)
         collector.delete_book_from_favorites(book_name)
-        assert len(collector.get_list_of_favorites_books()) == 0
+        assert book_name not in collector.get_list_of_favorites_books()
 
     def test_get_list_of_favorites_books_unadded_book_is_not_in_favorites(self, collector, book_name):
         collector.add_book_in_favorites(book_name)
         assert book_name not in collector.get_list_of_favorites_books()
 
     def test_get_book_with_specific_rating(self, collector):
+        collector.books_rating.clear()
         for name, rating in [
             ['Курочка Ряба', 5],
             ['Колобок', 4],
